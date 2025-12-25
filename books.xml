@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+  <book isbn="978-5-4461-1488-7">
+    <title>Создаем динамические веб-сайты на PHP</title>
+    <authors>
+      <author>Кевин Татро</author>
+      <author>Питер Макинтайр</author>
+    </authors>
+  </book>
+  <book isbn="978-5-389-23401-7">
+    <title>1984</title>
+    <authors>
+      <author>Джордж Оруэлл</author>
+    </authors>
+  </book>
+  <book isbn="978-5-17-114582-3">
+    <title>Преступление и наказание</title>
+    <authors>
+      <author>Фёдор Достоевский</author>
+    </authors>
+  </book>
+</catalog>

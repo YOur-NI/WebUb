@@ -1,5 +1,7 @@
 <?php
 
+
+
 $books = [
     ['title' => '1984', 'author' => 'Оруэлл', 'year' => 1949],
     ['title' => 'Мастер и Маргарита', 'author' => 'Булгаков', 'year' => 1967],
@@ -8,9 +10,14 @@ $books = [
     ['title' => 'Собачье сердце', 'author' => 'Булгаков', 'year' => 1925],
 ];
 
-
-#1. Получение названий книг
-function getBookTitles(array $books): array{
+/**
+ * Получает названия книг из массива
+ *
+ * @param array $books Массив книг
+ * @return array Массив названий книг
+ */
+function getBookTitles(array $books): array
+{
     $titles = [];
     foreach ($books as $book) {
         $titles[] = $book['title'];
@@ -18,8 +25,15 @@ function getBookTitles(array $books): array{
     return $titles;
 }
 
-#2. Проверка наличия книги по автору
-function hasBookByAuthor(array $books, string $author): bool{
+/**
+ * Проверяет наличие книг определенного автора
+ *
+ * @param array $books Массив книг
+ * @param string $author Имя автора
+ * @return bool Наличие книг автора
+ */
+function hasBookByAuthor(array $books, string $author): bool
+{
     $author = mb_strtolower($author);
     foreach ($books as $book) {
         if (mb_strtolower($book['author']) === $author) {
@@ -29,12 +43,19 @@ function hasBookByAuthor(array $books, string $author): bool{
     return false;
 }
 
-#3. Добавление года по умолчанию
-function addDefaultYear(array $books, int $defaultYear = 2025): array{
+/**
+ * Добавляет год по умолчанию для книг без года
+ *
+ * @param array $books Массив книг
+ * @param int $defaultYear Год по умолчанию
+ * @return array Массив книг с добавленным годом по умолчанию
+ */
+function addDefaultYear(array $books, int $defaultYear = 2025): array
+{
     $res = [];
-    foreach ($books as $book){
+    foreach ($books as $book) {
         $newBook = $book;
-        if (!isset($book['year'])){
+        if (!isset($book['year'])) {
             $newBook['year'] = $defaultYear;
         }
         $res[] = $newBook;
@@ -42,9 +63,15 @@ function addDefaultYear(array $books, int $defaultYear = 2025): array{
     return $res;
 }
 
-
-#4. Фильтрация по году выпуска
-function filterBooksByYear(array $books, int $minYear): array{
+/**
+ * Фильтрует книги по году выпуска
+ *
+ * @param array $books Массив книг
+ * @param int $minYear Минимальный год
+ * @return array Массив отфильтрованных книг
+ */
+function filterBooksByYear(array $books, int $minYear): array
+{
     $filtered = [];
     foreach ($books as $book) {
         if (isset($book['year']) && $book['year'] > $minYear) {
@@ -54,9 +81,14 @@ function filterBooksByYear(array $books, int $minYear): array{
     return $filtered;
 }
 
-
-#5. Преобразование книг в строковые описания
-function mapBooksToPairs(array $books): array{
+/**
+ * Преобразует книги в строковые описания
+ *
+ * @param array $books Массив книг
+ * @return array Массив строковых описаний книг
+ */
+function mapBooksToPairs(array $books): array
+{
     $res = [];
     foreach ($books as $book) {
         $title = $book['title'];
@@ -71,9 +103,15 @@ function mapBooksToPairs(array $books): array{
     return $res;
 }
 
-#6. Сортировка книг
-function sortBooks(array $books): array {
-    usort($books, function($a, $b) {
+/**
+ * Сортирует книги по году и названию
+ *
+ * @param array $books Массив книг
+ * @return array Отсортированный массив книг
+ */
+function sortBooks(array $books): array
+{
+    usort($books, function ($a, $b) {
         if ($a['year'] == $b['year']) {
             return strcmp($a['title'], $b['title']);
         }
@@ -82,8 +120,15 @@ function sortBooks(array $books): array {
     return $books;
 }
 
-#7. Группировка элементов
-function groupBy(array $items, string $key): array {
+/**
+ * Группирует элементы по значению ключа
+ *
+ * @param array $items Массив элементов
+ * @param string $key Ключ для группировки
+ * @return array Группированный массив
+ */
+function groupBy(array $items, string $key): array
+{
     $res = [];
     foreach ($items as $item) {
         if (isset($item[$key])) {
@@ -97,45 +142,85 @@ function groupBy(array $items, string $key): array {
     return $res;
 }
 
-#8. Реализация стека
-function stackPush(array &$stack, mixed $value): void {
+/**
+ * Добавляет элемент в стек
+ *
+ * @param array $stack Стек
+ * @param mixed $value Значение для добавления
+ * @return void
+ */
+function stackPush(array &$stack, mixed $value): void
+{
     array_push($stack, $value);
 }
 
-function stackPop(array &$stack): mixed {
+/**
+ * Извлекает элемент из стека
+ *
+ * @param array $stack Стек
+ * @return mixed Извлеченный элемент или null
+ */
+function stackPop(array &$stack): mixed
+{
     if (empty($stack)) {
         return null;
     }
     return array_pop($stack);
 }
 
-#9. Реализация очереди
-function queueEnqueue(array &$queue, mixed $value): void {
+/**
+ * Добавляет элемент в очередь
+ *
+ * @param array $queue Очередь
+ * @param mixed $value Значение для добавления
+ * @return void
+ */
+function queueEnqueue(array &$queue, mixed $value): void
+{
     array_push($queue, $value);
 }
 
-function queueDequeue(array &$queue): mixed {
+/**
+ * Извлекает элемент из очереди
+ *
+ * @param array $queue Очередь
+ * @return mixed Извлеченный элемент или null
+ */
+function queueDequeue(array &$queue): mixed
+{
     if (empty($queue)) {
         return null;
     }
     return array_shift($queue);
 }
 
-
-#10. Безопасное получение значения из массива
-function safeGet(array $array, string|int $key, mixed $default = null): mixed {
+/**
+ * Безопасно получает значение из массива
+ *
+ * @param array $array Массив
+ * @param string|int $key Ключ
+ * @param mixed $default Значение по умолчанию
+ * @return mixed Значение из массива или значение по умолчанию
+ */
+function safeGet(array $array, string|int $key, mixed $default = null): mixed
+{
     return $array[$key] ?? $default;
 }
 
-
-#11. Проверка, является ли массив ассоциативным
-function isAssociative(array $array): bool {
+/**
+ * Проверяет, является ли массив ассоциативным
+ *
+ * @param array $array Массив
+ * @return bool Является ли массив ассоциативным
+ */
+function isAssociative(array $array): bool
+{
     if (empty($array)) {
         return false;
     }
 
     $keys = array_keys($array);
-    
+
     foreach ($keys as $key) {
         if (!is_int($key)) {
             return true;
@@ -152,13 +237,10 @@ function isAssociative(array $array): bool {
 
     return false;
 }
- 
-#////////////////////////////////////////////E/////
 
 echo "1. Получение названий книг.<br>\n";
 
 print_r(getBookTitles($books));
-
 
 echo "<br>\n";
 echo "<br>\n2. Проверка наличия книги по автору.<br>\n";
@@ -203,7 +285,6 @@ echo "Извлекаем элемент из стека: " . stackPop($stack) . 
 echo "Стек после извлечения: ";
 print_r($stack);
 
-
 echo "<br>\n";
 echo "<br>\n9. Реализация очереди.<br>\n";
 
@@ -218,7 +299,6 @@ echo "Извлекаем элемент из очереди: " . queueDequeue($q
 echo "Очередь после извлечения: ";
 print_r($queue);
 
-
 echo "<br>\n";
 echo "<br>\n10. Безопасное получение значения из массива.<br>\n";
 
@@ -226,7 +306,6 @@ $testArray = ['key1' => 'value1', 'key2' => 'value2'];
 echo "Значение по ключу 'key1': " . safeGet($testArray, 'key1') . "<br>\n";
 echo "Значение по ключу 'key3' (не существует): ";
 var_dump(safeGet($testArray, 'key3', 'default_value'));
-
 
 echo "<br>\n";
 echo "<br>\n11. Проверка, является ли массив ассоциативным.<br>\n";
@@ -245,6 +324,6 @@ var_dump(isAssociative($mixedArray));
 echo "Пустой массив []: ";
 var_dump(isAssociative($emptyArray));
 
-
-
 ?>
+</body>
+</html>

@@ -1,9 +1,11 @@
 <?php
+
 #1. Создание класса и объекта
 class Person{
     public string $name;
     public int $age;
 }
+
 #2. Свойства с разной видимостью
 class Product{
     public string $title;
@@ -17,7 +19,6 @@ class Product{
         return $this->price;
     }
 }
-
 
 #3. Методы и ключевое слово $this
 class Greeter {
@@ -66,6 +67,7 @@ class BankAccount {
         return $this->balance;
     }
 }
+
 #6. Практический пример: каталог товаров
 class ShopProduct{
 
@@ -79,6 +81,7 @@ class ShopProduct{
         return "{$this->title} ({$this->producer}) — {$this->price} ₽";
     }
 }
+
 #7. Статические свойства и методы
 class Counter {
     private static int $count = 0;
@@ -178,4 +181,5 @@ $user2 = new User("maria@test.org", "Мария", new \DateTimeImmutable("2024-0
 // Вывод информации
 echo $user1->getInfo() . "<br>\n";
 echo $user2->getInfo() . "\n";
+
 ?>
