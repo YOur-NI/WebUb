@@ -1,200 +1,235 @@
 <?php
 
-header('Content-Type: text/html; charset=utf-8');
+declare(strict_types=1);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-// ——————————————————————————————————————————————
-// Подключение FPDF (если не установлен через composer)
-// ——————————————————————————————————————————————
-if (!class_exists('FPDF')) {
-    if (file_exists(__DIR__ . '/FPDF/fpdf.php')) {
-        require_once __DIR__ . '/FPDF/fpdf.php';
-    } else {
-        die('Ошибка: FPDF не найден. Скачайте fpdf.php в корень проекта.');
-    }
-}
-
-// ——————————————————————————————————————————————
-// Проверка расширения GD
-// ——————————————————————————————————————————————
 if (!extension_loaded('gd')) {
-    die('Ошибка: расширение GD не загружено');
+    http_response_code(500);
+    die('Расширение GD не загружено.');
 }
 
-// ——————————————————————————————————————————————
-// 1. Чёрный квадрат на белом фоне
-// ——————————————————————————————————————————————
+require_once __DIR__ . '/FPDF/fpdf.php';
+
+/**
+ * Создаёт и выводит изображение 200×200 с белым фоном и чёрным заполненным квадратом 100×100 по центру.
+ *
+ * @return void
+ */
 function renderBlackSquare(): void
 {
-    $size = 200;
-    $rectSize = 100;
-    $offset = ($size - $rectSize) / 2;
+    $width = 200;
+    $height = 200;
+    $squareSize = 100;
 
-    $image = imagecreatetruecolor($size, $size);
+    $image = imagecreatetruecolor($width, $height);
+    if ($image === false) {
+        http_response_code(500);
+        die('Не удалось создать изображение.');
+    }
+
     $white = imagecolorallocate($image, 255, 255, 255);
-    $black = imagecolorallocate($image, 0, 0, 0);
+    imagefill($image, 0, 0, $white);
 
-    imagefilledrectangle($image, 0, 0, $size - 1, $size - 1, $white);
-    imagefilledrectangle($image, $offset, $offset, $offset + $rectSize - 1, $offset + $rectSize - 1, $black);
+    $black = imagecolorallocate($image, 0, 0, 0);
+    $x = ($width - $squareSize) / 2;
+    $y = ($height - $squareSize) / 2;
+    imagefilledrectangle($image, $x, $y, $x + $squareSize, $y + $squareSize, $black);
 
     header('Content-Type: image/png');
     imagepng($image);
+
     imagedestroy($image);
 }
 
-// ——————————————————————————————————————————————
-// 2. Текст с встроенным шрифтом
-// ——————————————————————————————————————————————
+/**
+ * Выводит текст встроенного шрифта №5 на изображении 300×100 в левом верхнем углу.
+ *
+ * @param string $text Текст для отображения (макс. 50 символов)
+ * @return void
+ */
 function renderTextImage(string $text): void
 {
-    if (strlen($text) > 50) {
+    if (mb_strlen($text) > 50) {
         http_response_code(400);
-        exit('Текст слишком длинный (макс. 50 ASCII-символов)');
+        die('Текст слишком длинный (макс. 50 символов).');
     }
 
     $image = imagecreatetruecolor(300, 100);
+    if ($image === false) {
+        http_response_code(500);
+        die('Не удалось создать изображение.');
+    }
+
     $white = imagecolorallocate($image, 255, 255, 255);
     $black = imagecolorallocate($image, 0, 0, 0);
+    imagefill($image, 0, 0, $white);
 
-    imagefilledrectangle($image, 0, 0, 299, 99, $white);
-    imagestring($image, 5, 0, 0, $text, $black);
+    // Готовый шрифт №5: 8x10
+    imagestring($image, 5, 5, 5, $text, $black);
 
     header('Content-Type: image/png');
     imagepng($image);
+
     imagedestroy($image);
 }
 
-// ——————————————————————————————————————————————
-// 3. TrueType-шрифты
-// ——————————————————————————————————————————————
+/**
+ * Отображает текст с использованием TrueType-шрифта.
+ *
+ * @param string $text Текст для отображения
+ * @param string $fontPath Путь к TTF-файлу
+ * @return void
+ */
 function renderTtfText(string $text, string $fontPath): void
 {
     if (!is_readable($fontPath)) {
-        // Возвращаем ошибку как PNG
-        $image = imagecreatetruecolor(400, 50);
-        $red = imagecolorallocate($image, 255, 0, 0);
-        $white = imagecolorallocate($image, 255, 255, 255);
-        imagefilledrectangle($image, 0, 0, 399, 49, $white);
-        imagestring($image, 2, 10, 15, "Ошибка: шрифт не найден", $red);
-        header('Content-Type: image/png');
-        imagepng($image);
-        imagedestroy($image);
-        return;
+        http_response_code(404);
+        die('Шрифт не найден или недоступен для чтения.');
     }
 
     $image = imagecreatetruecolor(400, 100);
+    if ($image === false) {
+        http_response_code(500);
+        die('Не удалось создать изображение.');
+    }
+
     $white = imagecolorallocate($image, 255, 255, 255);
     $black = imagecolorallocate($image, 0, 0, 0);
-    imagefilledrectangle($image, 0, 0, 399, 99, $white);
+    imagefill($image, 0, 0, $white);
 
-    // Размер шрифта ~20px
-    imagettftext($image, 20, 0, 10, 40, $black, $fontPath, $text);
+    // Размер шрифта — 16 пикселей
+    $fontSize = 16;
+    $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
+    if ($bbox === false) {
+        http_response_code(500);
+        die('Ошибка при определении габаритов текста.');
+    }
+
+    $x = 10;
+    $y = 30 + abs($bbox[7]); // компенсация baseline
+
+    $result = imagettftext($image, $fontSize, 0, $x, $y, $black, $fontPath, $text);
+    if ($result === false) {
+        http_response_code(500);
+        die('Не удалось отрисовать текст с использованием TTF-шрифта.');
+    }
 
     header('Content-Type: image/png');
     imagepng($image);
+
     imagedestroy($image);
 }
 
-// ——————————————————————————————————————————————
-// 4. Динамическая кнопка
-// ——————————————————————————————————————————————
+/**
+ * Накладывает текст по центру на фоновое изображение (например, кнопку).
+ *
+ * @param string $text Текст (только буквы, цифры, пробелы)
+ * @param string $bgImagePath Путь к фоновому изображению
+ * @return void
+ */
 function renderButton(string $text, string $bgImagePath): void
 {
-    if (!preg_match('/^[a-zA-Z0-9\sа-яА-ЯёЁ]{1,50}$/u', $text)) {
+    if (preg_match('/^[а-яА-Яa-zA-Z0-9\s]*$/u', $text) !== 1) {
         http_response_code(400);
-        exit('Текст содержит запрещённые символы');
+        die('Текст может содержать только буквы, цифры и пробелы.');
     }
 
     if (!is_readable($bgImagePath)) {
         http_response_code(404);
-        exit('Фоновое изображение не найдено');
+        die('Фоновое изображение не найдено.');
     }
 
-    $bg = @imagecreatefrompng($bgImagePath);
-    if (!$bg) {
+    $bgInfo = getimagesize($bgImagePath);
+    if ($bgInfo === false) {
         http_response_code(500);
-        exit('Не удалось загрузить фон');
+        die('Не удалось определить размеры фонового изображения.');
     }
 
-    $width = imagesx($bg);
-    $height = imagesy($bg);
-    $image = imagecreatetruecolor($width, $height);
-    imagecopy($image, $bg, 0, 0, 0, 0, $width, $height);
-    imagedestroy($bg);
+    $image = match ($bgInfo[2]) {
+        IMAGETYPE_PNG => imagecreatefrompng($bgImagePath),
+        IMAGETYPE_JPEG, IMAGETYPE_JPEG2000 => imagecreatefromjpeg($bgImagePath),
+        IMAGETYPE_GIF => imagecreatefromgif($bgImagePath),
+        default => null,
+    };
+
+    if ($image === false || $image === null) {
+        http_response_code(500);
+        die('Не удалось загрузить фоновое изображение.');
+    }
+
+    $width = imagesx($image);
+    $height = imagesy($image);
+
+    // Используем встроенный шрифт №5 для простоты центровки
+    $fontWidth = imagefontwidth(5);
+    $fontHeight = imagefontheight(5);
+    $textWidth = strlen($text) * $fontWidth;
+    $x = ($width - $textWidth) / 2;
+    $y = ($height - $fontHeight) / 2;
 
     $black = imagecolorallocate($image, 0, 0, 0);
-    $font = __DIR__ . '/arial.ttf'; // или любой TTF
-    if (is_readable($font)) {
-        $bbox = imagettfbbox(16, 0, $font, $text);
-        $textWidth = $bbox[2] - $bbox[0];
-        $x = ($width - $textWidth) / 2;
-        $y = $height / 2 + 6; // компенсация базовой линии
-        imagettftext($image, 100, 0, $x, $y, $black, $font, $text);
-    } else {
-        // fallback на встроенный шрифт
-        $x = ($width - strlen($text) * imagefontwidth(5)) / 2;
-        $y = ($height - imagefontheight(5)) / 2;
-        imagestring($image, 5, $x, $y, $text, $black);
-    }
+    imagestring($image, 5, $x, $y, $text, $black);
 
     header('Content-Type: image/png');
     imagepng($image);
+
     imagedestroy($image);
 }
 
-// ——————————————————————————————————————————————
-// 5. Кэширование изображений
-// ——————————————————————————————————————————————
+/**
+ * Возвращает кэшированное изображение или генерирует новое и сохраняет в кэш.
+ *
+ * @param string $cacheDir Директория кэша
+ * @param string $key Уникальный идентификатор для кэширования
+ * @param callable $generator Функция, которая должна вывести изображение и сохранить его в файл
+ * @return void
+ */
 function getCachedImageOrGenerate(string $cacheDir, string $key, callable $generator): void
 {
+    if (!is_dir($cacheDir)) {
+        if (!mkdir($cacheDir, 0755, true)) {
+            http_response_code(500);
+            die('Не удалось создать директорию кэша.');
+        }
+    }
+
     $cacheFile = $cacheDir . '/' . md5($key) . '.png';
 
-    // 1. Если кеш есть — отдаём напрямую (быстро и безопасно)
-    if (file_exists($cacheFile)) {
+    if (is_readable($cacheFile)) {
         header('Content-Type: image/png');
-        header('Cache-Control: max-age=86400'); // кеширование в браузере
         readfile($cacheFile);
-        exit;
+        return;
     }
 
-    // 2. Гарантируем чистый вывод
-    if (headers_sent()) {
+    // Перехватываем вывод генератора
+    ob_start();
+    $generator();
+    $imageData = ob_get_contents();
+    ob_end_clean();
+
+    if ($imageData === false) {
         http_response_code(500);
-        exit('Заголовки уже отправлены');
+        die('Ошибка при генерации изображения.');
     }
 
-    // 3. Отключаем вывод ошибок в браузер
-    $errorReporting = error_reporting(0);
-    ini_set('display_errors', '0');
-
-    // 4. Проверяем директорию
-    if (!is_dir($cacheDir) && !mkdir($cacheDir, 0755, true) && !is_dir($cacheDir)) {
+    // Сохраняем в кэш
+    if (file_put_contents($cacheFile, $imageData) === false) {
         http_response_code(500);
-        exit('Не удалось создать директорию кеша');
+        die('Не удалось сохранить изображение в кэш.');
     }
 
-    // 5. Генерируем изображение НАПРЯМУЮ в файл
-    $success = false;
-    $tempFile = tempnam(sys_get_temp_dir(), 'img_');
-    if ($tempFile) {
-        $success = $generator($tempFile); // генератор принимает путь для сохранения
-        if ($success && file_exists($tempFile)) {
-            rename($tempFile, $cacheFile);
-            header('Content-Type: image/png');
-            readfile($cacheFile);
-            exit;
-        }
-        @unlink($tempFile);
-    }
-
-    // 6. Если генерация не удалась — ошибка
-    error_reporting($errorReporting);
-    http_response_code(500);
-    exit('Не удалось сгенерировать изображение');
+    header('Content-Type: image/png');
+    echo $imageData;
 }
 
-// ——————————————————————————————————————————————
-// 6. Простой PDF-документ
-// ——————————————————————————————————————————————
+/**
+ * Генерирует простой PDF-документ с сообщением.
+ *
+ * @param string $message Текст сообщения
+ * @return void
+ */
 function renderSimplePdf(string $message): void
 {
     $pdf = new FPDF();
@@ -202,219 +237,203 @@ function renderSimplePdf(string $message): void
     $pdf->SetFont('Arial', '', 12);
     $pdf->Cell(0, 10, $message, 0, 1, 'C');
     $pdf->Output();
-    exit;
 }
 
-// ——————————————————————————————————————————————
-// 7–9. InvoicePdf class with header, footer, table, logo, and link
-// ——————————————————————————————————————————————
+/**
+ * Расширенный класс FPDF для генерации счетов.
+ */
 class InvoicePdf extends FPDF
 {
-    function Header()
+    /**
+     * Верхний колонтитул.
+     *
+     * @return void
+     */
+    public function Header(): void
     {
-        // Logo on the left
-        $logo = __DIR__ . '/logo.png';
-        if (file_exists($logo)) {
-            $this->Image($logo, 10, 10, 30);
+        $logoPath = __DIR__ . '/logo.png';
+        if (file_exists($logoPath)) {
+            $this->Image($logoPath, 10, 10, 30);
         }
-        // Centered title
+
         $this->SetFont('Arial', 'B', 16);
-        $this->Cell(0, 10, 'Invoice', 0, 1, 'C');
-        $this->Ln(5);
+        $this->Cell(0, 10, 'Счёт', 0, 0, 'C');
+        $this->Ln(20);
     }
 
-    function Footer()
+    /**
+     * Нижний колонтитул.
+     *
+     * @return void
+     */
+    public function Footer(): void
     {
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, 'Page ' . $this->PageNo(), 0, 0, 'C');
+        $this->Cell(0, 10, 'Страница ' . $this->PageNo(), 0, 0, 'C');
     }
 
-    function buildTable(array $header, array $data): void
+    /**
+     * Рисует таблицу по переданным заголовкам и данным.
+     *
+     * @param array<int, string> $header Заголовки колонок
+     * @param array<int, array<int, string>> $data Строки данных
+     * @return void
+     */
+    public function buildTable(array $header, array $data): void
     {
-        $this->SetFont('Arial', 'B', 10);
-        $w = [80, 40, 40, 30];
-        for ($i = 0; $i < count($header); $i++) {
-            $this->Cell($w[$i], 7, $header[$i], 1, 0, 'C');
+        $colWidth = 40;
+        $lineHeight = 8;
+
+        // Заголовки
+        $this->SetFont('Arial', 'B', 12);
+        foreach ($header as $col) {
+            $this->Cell($colWidth, $lineHeight, $col, 1, 0, 'C');
         }
         $this->Ln();
-        $this->SetFont('Arial', '', 10);
+
+        // Данные
+        $this->SetFont('Arial', '', 12);
         foreach ($data as $row) {
-            for ($i = 0; $i < count($row); $i++) {
-                $this->Cell($w[$i], 6, $row[$i], 1, 0, 'L');
+            foreach ($row as $col) {
+                $this->Cell($colWidth, $lineHeight, $col, 1, 0, 'C');
             }
             $this->Ln();
         }
     }
 
-    function renderInvoice(array $items): void
+    /**
+     * Генерирует PDF-счёт с таблицей товаров.
+     *
+     * @param array<int, array<string, string|int>> $items Список товаров
+     * @return void
+     */
+    public function renderInvoice(array $items): void
     {
         $this->AddPage();
-        $header = ['Item', 'Qty', 'Price', 'Total'];
-        $this->buildTable($header, $items);
+        $header = ['Наименование', 'Кол-во', 'Цена', 'Сумма'];
+        $data = [];
+        foreach ($items as $item) {
+            $data[] = [
+                (string) ($item['name'] ?? ''),
+                (string) ($item['qty'] ?? ''),
+                (string) ($item['price'] ?? ''),
+                (string) ($item['total'] ?? ''),
+            ];
+        }
+        $this->buildTable($header, $data);
+
+        // Гиперссылка в конце
         $this->Ln(10);
-        // Hyperlink
-        $this->SetFont('Arial', 'U', 10);
+        $this->SetFont('Arial', 'U', 12);
         $this->SetTextColor(0, 0, 255);
-        $this->Write(5, 'Visit website');
-        $this->Link(
-            $this->GetX() - $this->GetStringWidth('Visit website'),
-            $this->GetY() - 5,
-            $this->GetStringWidth('Visit website'),
-            5,
-            'https://example.com'
-        );
-        $this->Output();
-        exit;
+        $this->Write(10, 'Посетить сайт', 'https://example.com');
     }
 }
 
-// ——————————————————————————————————————————————
-// 10. Final homework: badge.php and PDF invoice
-// ——————————————————————————————————————————————
-function runHomework(): void
+/**
+ * Генерирует персонализированный значок (badge).
+ *
+ * @param string $name Имя (только буквы и пробелы, 2–50 символов)
+ * @return void
+ */
+function renderBadge(string $name): void
 {
-    if (isset($_GET['type']) && $_GET['type'] === 'badge') {
-        $name = trim($_GET['name'] ?? '');
-        if (!preg_match('/^[a-zA-Zа-яА-ЯёЁ\s]{2,50}$/u', $name)) {
-            http_response_code(400);
-            exit('Invalid name');
+    $name = trim($name);
+    if (
+        mb_strlen($name) < 2 ||
+        mb_strlen($name) > 50 ||
+        preg_match('/^[а-яА-Яa-zA-Z\s]+$/u', $name) !== 1
+    ) {
+        http_response_code(400);
+        die('Недопустимое имя: только буквы и пробелы, длина от 2 до 50 символов.');
+    }
+
+    $bgPath = __DIR__ . '/badge-bg.png';
+    if (!is_readable($bgPath)) {
+        http_response_code(500);
+        die('Фон badge-bg.png не найден.');
+    }
+
+    $cacheDir = __DIR__ . '/cache/badge';
+
+    getCachedImageOrGenerate($cacheDir, $name, function () use ($name, $bgPath) {
+        $image = imagecreatefrompng($bgPath);
+        if ($image === false) {
+            http_response_code(500);
+            die('Не удалось загрузить фон badge-bg.png.');
         }
 
-        $cacheDir = __DIR__ . '/cache';
-        getCachedImageOrGenerate($cacheDir, 'badge_' . $name, function () use ($name) {
-            $bgPath = __DIR__ . '/badge-bg.png';
-            if (!is_readable($bgPath)) {
-                // fallback
-                $image = imagecreatetruecolor(300, 100);
-                $white = imagecolorallocate($image, 255, 255, 255);
-                $black = imagecolorallocate($image, 0, 0, 0);
-                imagefilledrectangle($image, 0, 0, 299, 99, $white);
-                imagestring($image, 5, 50, 40, "BADGE: $name", $black);
-            } else {
-                $bg = imagecreatefrompng($bgPath);
-                $width = imagesx($bg);
-                $height = imagesy($bg);
-                $image = imagecreatetruecolor($width, $height);
-                imagecopy($image, $bg, 0, 0, 0, 0, $width, $height);
-                imagedestroy($bg);
+        $width = imagesx($image);
+        $height = imagesy($image);
 
-                $black = imagecolorallocate($image, 0, 0, 0);
-                $font = __DIR__ . '/arial.ttf';
-                if (is_readable($font)) {
-                    imagettftext($image, 18, 0, 30, 60, $black, $font, $name);
-                } else {
-                    imagestring($image, 5, 30, 50, $name, $black);
-                }
-            }
-            header('Content-Type: image/png');
-            imagepng($image);
-            imagedestroy($image);
-        });
-        return;
-    }
+        $black = imagecolorallocate($image, 0, 0, 0);
+        $font = 5;
+        $textWidth = imagefontwidth($font) * strlen($name);
+        $x = ($width - $textWidth) / 2;
+        $y = ($height - imagefontheight($font)) / 2;
 
-    if (isset($_GET['type']) && $_GET['type'] === 'invoice') {
-        $items = [
-            ['Headphones', '2', '1500', '3000'],
-            ['Mouse', '1', '800', '800'],
-            ['Keyboard', '1', '2500', '2500'],
-            ['Monitor', '1', '12000', '12000'],
-            ['Mouse Pad', '3', '200', '600']
-        ];
-        $pdf = new InvoicePdf();
-        $pdf->renderInvoice($items);
-        return;
-    }
-    
+        imagestring($image, $font, $x, $y, $name, $black);
+
+        imagepng($image);
+
+        imagedestroy($image);
+    });
 }
-// ——————————————————————————————————————————————
-// Потом: вывод HTML-страницы со всеми примерами
-// ——————————————————————————————————————————————
-?>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Графика и PDF — Демонстрация</title>
-    <style>
-        body { font-family: sans-serif; max-width: 900px; margin: 20px auto; }
-        h2 { margin: 25px 0 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .example { margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 4px; }
-        img { max-width: 100%; border: 1px solid #ddd; background: #fff; }
-        .error { color: #c33; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <h1>Графика и PDF — Демонстрация всех заданий</h1>
 
-    <h2>1. Чёрный квадрат</h2>
-    <div class="example">
-        <img src="?type=black-square" alt="Чёрный квадрат">
-    </div>
+/**
+ * Генерирует PDF-счёт с предустановленными товарами.
+ *
+ * @return void
+ */
+function renderInvoicePdf(): void
+{
+    $items = [
+        ['name' => 'Товар A', 'qty' => 2, 'price' => 100, 'total' => 200],
+        ['name' => 'Товар B', 'qty' => 1, 'price' => 150, 'total' => 150],
+        ['name' => 'Товар C', 'qty' => 3, 'price' => 50,  'total' => 150],
+        ['name' => 'Товар D', 'qty' => 5, 'price' => 30,  'total' => 150],
+        ['name' => 'Товар E', 'qty' => 2, 'price' => 80,  'total' => 160],
+    ];
 
-    <h2>2. Текст (встроенный шрифт)</h2>
-    <div class="example">
-        <img src="?type=text&value=Hello+World" alt="Текст">
-    </div>
+    $pdf = new InvoicePdf();
+    $pdf->renderInvoice($items);
+}
 
-    <h2>3. TrueType-текст</h2>
-    <div class="example">
-        <img src="?type=ttf&value=Привет+мир!" alt="TTF текст">
-        <div class="note">Требуется файл arial.ttf в корне</div>
-    </div>
+// Роутинг
+$type = $_GET['type'] ?? null;
+if ($type === 'badge') {
+    // Валидация имени через renderBadge()
+    renderBadge($_GET['name'] ?? '');
+} elseif ($type === 'invoice') {
+    renderInvoicePdf();
+} else {
+    // По умолчанию — можно вызвать пример из задания 1
+    // renderBlackSquare(); // раскомментировать при необходимости теста
+}
 
-    <h2>4. Кнопка</h2>
-    <div class="example">
-        <img src="?type=button&value=Купить+сейчас" alt="Кнопка">
-        <div class="note">Требуется файл badge-bg.png в корне</div>
-    </div>
-
-    <h2>5. Кэширование: значок</h2>
-    <div class="example">
-        <img src="?type=badge&name=Алексей" alt="Значок">
-    </div>
-
-    <h2>6–9. PDF: Счёт с таблицей</h2>
-    <div class="example">
-        <a href="?type=invoice" target="_blank" class="button">📄 Скачать PDF-счёт</a>
-    </div>
-
-    <h2>10. Простой PDF</h2>
-    <div class="example">
-        <a href="?type=simple-pdf" target="_blank" class="button">📄 Простой PDF</a>
-    </div>
-
-    <div class="example">
-        <h3>Если изображения не загружаются:</h3>
-        <ul>
-            <li>Проверьте, установлено ли расширение GD: <?php echo extension_loaded('gd') ? '<span style="color:green">✅ Да</span>' : '<span class="error">❌ Нет</span>'; ?></li>
-            <li>Убедитесь, что файлы <code>arial.ttf</code> и <code>badge-bg.png</code> существуют</li>
-            <li>Проверьте права на запись в папку <code>cache/</code></li>
-        </ul>
-    </div>
-
-    <style>
-        .button {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #0066cc;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin: 5px 0;
-        }
-        .note {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: 5px;
-        }
-    </style>
-</body>
-</html>
-    <?php
-    exit;
-
-// Запуск домашнего задания (роутинг)
-runHomework();
-?>
+// ----------------------------------------------------------------------------
+// Демонстрация всех функций (раскомментировать для тестирования):
+//
+// renderBlackSquare();
+//renderTextImage("Привет, мир!");
+//renderTtfText("Hello TTF", __DIR__ . '/arial.ttf'); // убедитесь, что шрифт существует
+renderButton("Кнопка 123", __DIR__ . '/button-bg.png');
+//
+// renderSimplePdf("Тестовый PDF");
+//
+// $pdf = new InvoicePdf();
+// $pdf->renderInvoice([
+//     ['name' => 'Товар', 'qty' => 1, 'price' => 100, 'total' => 100]
+// ]);
+//
+// renderBadge("Иван");
+//
+// getCachedImageOrGenerate(__DIR__ . '/cache/test', 'testkey', function () {
+//     $img = imagecreatetruecolor(100, 50);
+//     $white = imagecolorallocate($img, 255, 255, 255);
+//     imagefill($img, 0, 0, $white);
+//     imagepng($img);
+//     imagedestroy($img);
+// });
+// ----------------------------------------------------------------------------

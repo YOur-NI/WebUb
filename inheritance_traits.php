@@ -82,7 +82,6 @@ trait IdentityTrait {
     }
 }
 
-// Обновляем ShopProduct, чтобы он использовал оба трейта
 class ShopProduct {
     use PriceUtilities, IdentityTrait;
 
