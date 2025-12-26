@@ -398,6 +398,7 @@ function renderInvoicePdf(): void
 
     $pdf = new InvoicePdf();
     $pdf->renderInvoice($items);
+    $pdf->Output();
 }
 
 // Роутинг
@@ -408,25 +409,24 @@ if ($type === 'badge') {
 } elseif ($type === 'invoice') {
     renderInvoicePdf();
 } else {
-    // По умолчанию — можно вызвать пример из задания 1
-    // renderBlackSquare(); // раскомментировать при необходимости теста
+
 }
 
 // ----------------------------------------------------------------------------
 // Демонстрация всех функций (раскомментировать для тестирования):
 //
-// renderBlackSquare();
+//renderBlackSquare();
 //renderTextImage("Привет, мир!");
 //renderTtfText("Hello TTF", __DIR__ . '/arial.ttf'); // убедитесь, что шрифт существует
-renderButton("Кнопка 123", __DIR__ . '/button-bg.png');
+//renderButton("button 123", __DIR__ . '/button-bg.png');
 //
-// renderSimplePdf("Тестовый PDF");
+//renderSimplePdf("Тестовый PDF");
 //
 // $pdf = new InvoicePdf();
 // $pdf->renderInvoice([
 //     ['name' => 'Товар', 'qty' => 1, 'price' => 100, 'total' => 100]
 // ]);
-//
+// //
 // renderBadge("Иван");
 //
 // getCachedImageOrGenerate(__DIR__ . '/cache/test', 'testkey', function () {
